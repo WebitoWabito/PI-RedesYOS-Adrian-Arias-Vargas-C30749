@@ -44,4 +44,4 @@ class VSocket {
       char type;
 };
 
-#endif // VSocket_h
+#endif

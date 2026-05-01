@@ -67,7 +67,6 @@ int main( int cuantos, char ** argumentos ) {
    bool ipv6 = false;
    pid_t pid;
    
-   // Parse arguments
    if ( cuantos > 1 ) {
       port = atoi( argumentos[ 1 ] );
    }
@@ -90,11 +89,9 @@ int main( int cuantos, char ** argumentos ) {
       
       pid = fork();
       if ( pid == 0 ) {
-         // Child process
          Service( client );
          exit( 0 );
       } else if ( pid > 0 ) {
-         // Parent process - close child's copy of socket
          client->Close();
          delete client;
       } else {

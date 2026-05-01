@@ -17,4 +17,4 @@ class Socket : public VSocket {
       VSocket * AcceptConnection();
 };
 
-#endif // Socket_h
+#endif

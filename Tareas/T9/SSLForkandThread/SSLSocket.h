@@ -31,4 +31,4 @@ class SSLSocket : public Socket {
       void * BIO;
 };
 
-#endif // SSLSocket_h
+#endif

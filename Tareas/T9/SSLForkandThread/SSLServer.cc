@@ -61,7 +61,6 @@ int main( int cuantos, char ** argumentos ) {
    int port = PORT;
    bool ipv6 = false;
    
-   // Parse arguments
    if ( cuantos > 1 ) {
       port = atoi( argumentos[ 1 ] );
    }
