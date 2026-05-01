@@ -1,0 +1,14 @@
+*.crt
+
+*.srl
+
+*.o
+*.out
+*.exe
+
+.DS_Store
+
+.vscode/
+.idea/
+
+*.log
