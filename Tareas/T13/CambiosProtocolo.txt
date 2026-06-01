@@ -1,0 +1,3 @@
+"Entregar un documento con los cambios a aplicar en el servidor de figuras para adoptar el nuevo protocolo"
+
+El protocolo sigue siendo el mismo al de la etapa 2, por ende no hay cambios en el servidor con respecto al protocolo. 
