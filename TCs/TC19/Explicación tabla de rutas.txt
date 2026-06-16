@@ -1,0 +1,10 @@
+La tabla de rutas se está almacenando en memoria como un std::map<std::string, std::set<std::string>> protegido por un mutex. La clave es la ip del fork dueño de las figuras, y el valor es el conjunto de nombres de figuras que ese fork tiene disponibles. Se usa la clave especial "LOCAL" para las figuras del servidor local, es decir de la isla 4.
+
+Se llena de manera que el hilo localServerRefreshThread consulta P/R/ al servidor de figuras local por SSL cada 5 segundos y actualiza routeMap["LOCAL"].
+Las figuras de otras islas entran cuando el hilo udpListenerThread recibe un mensaje P/D/<lista> por UDP,se extrae la ip de origen y actualiza routeMap[ip_origen].
+
+Cuando un cliente pide una figura, se busca su nombre en el mapa para encontrar a que ip pertenece
+Si la ip es "LOCAL" se consulta al servidor propio por SSL.
+Si es una ip remota se consulta al fork de esa isla por TCP.
+
+Si una conexión TCP a un fork remoto falla, esa entrada se borra del mapa inmediatamente, que es como se terminó de definir en el protocolo 
