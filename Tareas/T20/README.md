@@ -1,0 +1,2 @@
+Se está experimentando un problema a la hora de encontrar otros intermediarios en la red privada, se piensa trabajar en el intermediario al cuál se le debe de cambiar el puerto de 1235 a 2026 y verificar por la parte de los broadcast con el udp y los IP helpers.
+En resumen, esto ya se habló con los profes y queda pendiente
