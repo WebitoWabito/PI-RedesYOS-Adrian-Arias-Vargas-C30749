@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NachOS Filesystem</title>
+  <style>
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --border:   #2a2d3e;
+      --accent:   #6c63ff;
+      --accent2:  #00d4aa;
+      --danger:   #ff5f6d;
+      --text:     #e8eaf6;
+      --muted:    #7b7fa3;
+      --radius:   14px;
+      --shadow:   0 8px 32px rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header .logo {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px;
+    }
+    header p {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: .95rem;
+    }
+
+    /* ── Layout ── */
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 640px) { .container { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .icon {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .icon-get    { background: rgba(108,99,255,.18); }
+    .icon-post   { background: rgba(0,212,170,.18); }
+    .icon-list   { background: rgba(255,200,80,.18); }
+    .icon-result { background: rgba(255,95,109,.18); }
+
+    /* ── Form elements ── */
+    label {
+      font-size: .82rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    input[type="text"], textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: .95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 20px;
+      font-weight: 700;
+      font-size: .92rem;
+      transition: opacity .2s, transform .1s;
+    }
+    button:hover  { opacity: .88; }
+    button:active { transform: scale(.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8a63ff);
+      color: #fff;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, var(--accent2), #00b08e);
+      color: #fff;
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #f7b731, #e8a11c);
+      color: #1a1a1a;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #c94a56);
+      color: #fff;
+    }
+
+    /* ── Result panel (full width) ── */
+    .result-card {
+      grid-column: 1 / -1;
+    }
+    .result-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 120px;
+      font-family: 'Courier New', monospace;
+      font-size: .88rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--accent2);
+      overflow-y: auto;
+      max-height: 320px;
+    }
+
+    /* ── Status badge ── */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .status.ok      { background: rgba(0,212,170,.15); color: var(--accent2); }
+    .status.err     { background: rgba(255,95,109,.15); color: var(--danger); }
+    .status.loading { background: rgba(108,99,255,.15); color: var(--accent); }
+
+    /* ── Config bar ── */
+    .config-bar {
+      width: 100%;
+      max-width: 900px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .config-bar label { white-space: nowrap; }
+    .config-bar input { flex: 1; min-width: 180px; }
+    .server-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(0,212,170,.2);
+      flex-shrink: 0;
+    }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">⬡ NachOS FileSystem</div>
+    <p>Cliente web para el filesystem remoto vía intermediario</p>
+  </header>
+
+  <!-- Config bar -->
+  <div class="config-bar">
+    <div class="server-dot" id="dot"></div>
+    <label>Intermediario</label>
+    <input type="text" id="serverUrl"
+           value="http://127.0.0.1:8080"
+           placeholder="http://IP:8080" />
+    <span id="statusBadge" class="status loading">● Esperando</span>
+  </div>
+
+  <div class="container">
+
+    <!-- GET figura -->
+    <div class="card">
+      <h2>
+        <span class="icon icon-get">📥</span>
+        GET figura
+      </h2>
+      <div class="field">
+        <label>Nombre de la figura</label>
+        <input type="text" id="getFigureName" placeholder="ej: triangulo" />
+      </div>
+      <button class="btn-primary" onclick="getFigura()">Obtener figura</button>
+    </div>
+
+    <!-- LISTAR -->
+    <div class="card">
+      <h2>
+        <span class="icon icon-list">📋</span>
+        LISTAR figuras
+      </h2>
+      <p style="color:var(--muted);font-size:.9rem;flex:1">
+        Retorna la lista de todas las figuras almacenadas en el filesystem de NachOS.
+      </p>
+      <button class="btn-warning" onclick="listarFiguras()">Listar todas</button>
+    </div>
+
+    <!-- POST figura -->
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>
+        <span class="icon icon-post">📤</span>
+        POST figura
+      </h2>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;flex-wrap:wrap">
+        <div class="field">
+          <label>Nombre de la figura</label>
+          <input type="text" id="postFigureName" placeholder="ej: cuadrado" />
+        </div>
+        <div class="field">
+          <label>Contenido</label>
+          <textarea id="postFigureContent"
+            placeholder="Ingresá el contenido de la figura..."></textarea>
+        </div>
+      </div>
+      <button class="btn-success" onclick="postFigura()" style="align-self:flex-start">
+        Guardar figura
+      </button>
+    </div>
+
+    <!-- Resultado -->
+    <div class="card result-card">
+      <h2>
+        <span class="icon icon-result">💬</span>
+        Respuesta del servidor
+        <span id="opBadge" style="margin-left:auto;font-size:.75rem;color:var(--muted)"></span>
+      </h2>
+      <div class="result-box" id="result">Aquí aparecerá la respuesta...</div>
+    </div>
+
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function getBase() {
+      return $('serverUrl').value.replace(/\/$/, '');
+    }
+
+    function setStatus(state, text) {
+      const b = $('statusBadge');
+      b.className = 'status ' + state;
+      b.textContent = '● ' + text;
+      $('dot').style.background =
+        state === 'ok' ? 'var(--accent2)' :
+        state === 'err' ? 'var(--danger)' : 'var(--accent)';
+    }
+
+    function showLoading(op) {
+      $('result').textContent = 'Enviando solicitud...';
+      $('opBadge').textContent = op;
+      setStatus('loading', 'Conectando...');
+    }
+
+    function showResult(text) {
+      $('result').textContent = text;
+      setStatus('ok', 'OK');
+    }
+
+    function showError(text) {
+      $('result').textContent = '⚠ ' + text;
+      setStatus('err', 'Error');
+    }
+
+    /* ── GET figura ── */
+    async function getFigura() {
+      const name = $('getFigureName').value.trim();
+      if (!name) { showError('Escribí el nombre de la figura.'); return; }
+      showLoading('GET /figura/' + name);
+      try {
+        const res = await fetch(`${getBase()}/figura/${name}`);
+        const text = await res.text();
+        showResult(text);
+      } catch (e) {
+        showError('No se pudo conectar al intermediario.\n' + e.message);
+      }
+    }
+
+    /* ── LISTAR ── */
+    async function listarFiguras() {
+      showLoading('GET /figuras');
+      try {
+        const res = await fetch(`${getBase()}/figuras`);
+        const text = await res.text();
+        showResult(text);
+      } catch (e) {
+        showError('No se pudo conectar al intermediario.\n' + e.message);
+      }
+    }
+
+    /* ── POST figura ── */
+    async function postFigura() {
+      const name    = $('postFigureName').value.trim();
+      const content = $('postFigureContent').value.trim();
+      if (!name)    { showError('Escribí el nombre de la figura.'); return; }
+      if (!content) { showError('Escribí el contenido.'); return; }
+      showLoading('POST /figura/' + name);
+      try {
+        const res = await fetch(`${getBase()}/figura/${name}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: content
+        });
+        const text = await res.text();
+        showResult(text);
+      } catch (e) {
+        showError('No se pudo conectar al intermediario.\n' + e.message);
+      }
+    }
+
+    /* ── Enter shortcuts ── */
+    $('getFigureName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') getFigura();
+    });
+    $('postFigureName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') $('postFigureContent').focus();
+    });
+  </script>
+
+</body>
+</html>
